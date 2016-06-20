@@ -29,3 +29,7 @@ def ycbcr422_layout(dw):
 
 def block_layout(dw):
     return [("data", dw)]
+
+pi      = 3.14159265358979323846
+sqrt2   = 1.41421356237309504880
+sqrt1_2 = 0.70710678118654752440

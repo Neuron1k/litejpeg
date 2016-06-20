@@ -2,14 +2,15 @@
 
 from litex.gen import *
 from litex.soc.interconnect.stream import *
+from litex.soc.interconnect.csr import *
 
 from litejpeg.core.common import *
 
 
 class Quantization(PipelinedActor, Module, AutoCSR):
     def __init__(self, init):
-        self.sink = stream.Endpoint(block_layout(12))
-        self.source = stream.Endpoint(block_layout(12))
+        self.sink = sink= stream.Endpoint(block_layout(12))
+        self.source = source = stream.Endpoint(block_layout(12))
         PipelinedActor.__init__(self, 3)
 
         self._we = CSR()
@@ -36,7 +37,7 @@ class Quantization(PipelinedActor, Module, AutoCSR):
         data = Signal(24)
         self.sync += \
             If(self.pipe_ce,
-                value.eq(sink.data * read_port.dat_r)
+                value.eq(sink.data * read_port.dat_r),
                 source.data.eq(data[12:])
             )
         ]
