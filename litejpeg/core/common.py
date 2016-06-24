@@ -27,6 +27,11 @@ def ycbcr444_layout(dw):
 def ycbcr422_layout(dw):
     return [("y", dw), ("cb_cr", dw)]
 
+def dct_block_layout(dw,ds):
+    #return [([("dct_"+str(i), dw) for i in range(ds)])]
+    #return [ ("dct", [("dct_raw", dw)]* ds )]
+    return [ ([("dct", dw)]* ds ) ]
+
 def block_layout(dw):
     return [("data", dw)]
 

@@ -6,8 +6,6 @@ from litex.soc.interconnect.stream import *
 
 from litejpeg.core.common import *
 
-datapath_latency = 8
-
 class DCTRotation(Module):
     def __init__(self, i0, i1, o0, o1, k, n):
         cos = int(math.cos((n*pi)/16))
@@ -68,18 +66,40 @@ class DCT1D(Module):
             result[4].eq(s3_vector[1]),
             result[0].eq(s3_vector[0])
         ]
+datapath_latency = 4
+
+@CEInserter()
+class DCTDatapath(Module):
+    def __init__(self, dw, dct_block):
+        self.sink = sink = Record(dct_block_layout(dw,dct_block))
+        self.source = source = Record(dct_block_layout(dw,dct_block))
+
+         # # #
+
+        dct_matrix_1d = Array(Array(Signal(dw) for a in range(8)) for b in range(8))
+        dct_matrix_2d = Array(Array(Signal(dw) for a in range(8)) for b in range(8))
+
+
+
+
 
 class DCT(PipelinedActor,Module):
-    def __init__(self,dct_block_in,dct_block_out):
-        self.sink = sink = stream.Endpoint(EndpointDescription(rgb_layout(dct_block_in)))
-        self.source = source = stream.Endpoint(EndpointDescription(rgb_layout(dct_block_out)))
+    def __init__(self,dw=12, dct_block=64):
+        self.sink = sink = stream.Endpoint(EndpointDescription(dct_block_layout(dw,dct_block)))
+        self.source = source = stream.Endpoint(EndpointDescription(dct_block_layout(dw,dct_block)))
         PipelinedActor.__init__(self, datapath_latency)
 
         # # #
-        dct_matrix_1d = Array(Array(Signal(12) for a in range(8)) for b in range(8))
-        dct_matrix_2d = Array(Array(Signal(12) for a in range(8)) for b in range(8))
-        for i in range(8):
-            DCT1D(dct_block_in[i][:], dct_matrix_1d)
-            #need delay datapath here
-        for j in range(8):
-            DCT1D(dct_matrix_1d[:][j], dct_matrix_2d)
+
+
+        self.submodules.datapath = DCTDatapath(dw,dct_block)
+        self.comb += self.datapath.ce.eq(self.pipe_ce)
+        #self.comb +=
+
+        for i in range(dct_block):
+            name = "dct_" + str(i)
+            self.comb += getattr(self.datapath.sink, name).eq(getattr(sink, name))
+
+        for i in range(dct_block):
+            name = "dct_" + str(i)
+            self.comb += getattr(source, name).eq(getattr(self.datapath.source, name))
