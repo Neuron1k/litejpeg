@@ -2,7 +2,7 @@ from litex.soc.interconnect.stream import *
 from litex.soc.interconnect.stream_sim import *
 
 from litejpeg.core.common import *
-from litejpeg.core.dct import DCT
+from litejpeg.core.dct import *
 
 dw = 12
 ds = 64
@@ -21,7 +21,7 @@ omit_table = ["dct_" + str(i) for i in range(ds)]
 class TB(Module):
     def __init__(self):
         self.submodules.streamer = PacketStreamer(EndpointDescription(dct_block_layout(dw,ds)))
-        self.submodules.DCT1D = DCT()
+        self.submodules.DCT = DCT()
         self.submodules.logger = PacketLogger(EndpointDescription(dct_block_layout(dw,ds)))
 
 
@@ -29,13 +29,15 @@ class TB(Module):
             self.streamer.source.connect(self.DCT.sink),
             self.DCT.source.connect(self.logger.sink)
         ]
+
+        for i in range(ds):
+            name = "dct_" + str(i)
+            #self.comb += getattr(self.DCT.sink.payload, name)[0:12].eq(self.streamer.source)
+            #self.comb += getattr(self.logger.sink, name).eq(self.DCT.source)
+
         self.comb += [
             Record.connect(self.streamer.source, self.DCT.sink, omit=omit_table ),
-            self.DCT.sink.payload.eq(self.streamer.source.data) ,
-
-
-            Record.connect(self.DCT.source, self.logger.sink, omit=omit_table ),
-            self.logger.sink.data.eq(self.DCT.source)
+            Record.connect(self.DCT.source, self.logger.sink, omit=omit_table )
         ]
 
 def main_generator(dut):

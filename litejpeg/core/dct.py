@@ -78,7 +78,13 @@ class DCTDatapath(Module):
 
         dct_matrix_1d = Array(Array(Signal(dw) for a in range(8)) for b in range(8))
         dct_matrix_2d = Array(Array(Signal(dw) for a in range(8)) for b in range(8))
-
+        dct_delayed = [sink]
+        for i in range(datapath_latency):
+            dct_n = Record(dct_block_layout(dw,dct_block))
+            for i in range(dct_block):
+                name = "dct_" + str(i)
+                self.sync += getattr(dct_n, name).eq(getattr(dct_delayed[-1], name))
+            dct_delayed.append(dct_n)
 
 
 
