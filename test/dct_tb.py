@@ -20,25 +20,22 @@ omit_table = ["dct_" + str(i) for i in range(ds)]
 
 class TB(Module):
     def __init__(self):
-        self.submodules.streamer = PacketStreamer(EndpointDescription(dct_block_layout(dw,ds)))
+        self.submodules.streamer = PacketStreamer(EndpointDescription([("data", dw)*ds]))
         self.submodules.DCT = DCT()
-        self.submodules.logger = PacketLogger(EndpointDescription(dct_block_layout(dw,ds)))
-
+        self.submodules.logger = PacketLogger(EndpointDescription([("data", dw)*ds]))
 
         self.comb += [
-            self.streamer.source.connect(self.DCT.sink),
-            self.DCT.source.connect(self.logger.sink)
-        ]
+            Record.connect(self.streamer.source, self.DCT.sink, omit=["data"]),
+            Record.connect(self.DCT.source, self.logger.sink, omit=omit_table),
+         ]
 
         for i in range(ds):
             name = "dct_" + str(i)
-            #self.comb += getattr(self.DCT.sink.payload, name)[0:12].eq(self.streamer.source)
-            #self.comb += getattr(self.logger.sink, name).eq(self.DCT.source)
+            self.comb += getattr(self.DCT.sink.payload, name).eq(self.streamer.source.data[i*dw:(i+1)*dw])
+            self.comb += self.logger.sink.data[i*dw:(i+1)*dw].eq(getattr(self.DCT.source,name))
 
-        self.comb += [
-            Record.connect(self.streamer.source, self.DCT.sink, omit=omit_table ),
-            Record.connect(self.DCT.source, self.logger.sink, omit=omit_table )
-        ]
+
+
 
 def main_generator(dut):
 
